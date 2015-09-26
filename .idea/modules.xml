@@ -3,7 +3,10 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Ftdi-usb-uart-App.iml" filepath="$PROJECT_DIR$/Ftdi-usb-uart-App.iml" />
+      <module fileurl="file://$PROJECT_DIR$/dependencyLibs/usb-serial-for-android/UsbSerialLibrary/UsbSerialLibrary.iml" filepath="$PROJECT_DIR$/dependencyLibs/usb-serial-for-android/UsbSerialLibrary/UsbSerialLibrary.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/dependencyLibs/dependencyLibs.iml" filepath="$PROJECT_DIR$/dependencyLibs/dependencyLibs.iml" />
+      <module fileurl="file://$PROJECT_DIR$/dependencyLibs/usb-serial-for-android/usb-serial-for-android.iml" filepath="$PROJECT_DIR$/dependencyLibs/usb-serial-for-android/usb-serial-for-android.iml" />
     </modules>
   </component>
 </project>

@@ -23,4 +23,5 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile files('libs/j2xx.jar')
+    compile project(':dependencyLibs:usb-serial-for-android:UsbSerialLibrary')
 }
