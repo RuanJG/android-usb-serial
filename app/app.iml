@@ -88,5 +88,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="j2xx" level="project" />
     <orderEntry type="module" module-name="UsbSerialLibrary" exported="" />
+    <orderEntry type="module" module-name="Mavlink" exported="" />
   </component>
 </module>

@@ -1,9 +1,11 @@
 package com.example.joe.ftdi_usb_uart_app;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,36 +20,42 @@ public class MainActivity extends Activity {
     private EditText inputText;
     private Button button;
     private UsbFTDIUart ftdiUart ;
+    private UsbConnection mUsbConnection;
+    private Thread sendThread;
+    private Thread listenThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        doSetupUart();
+        doSetupUsb();
         console = (EditText) this.findViewById(R.id.console);
         inputText = (EditText) this.findViewById(R.id.inputText);
         button = (Button) this.findViewById(R.id.sendbutton);
         if( button != null ) {
-            //button.setOnClickListener(this);
             button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    debugMsg("onclick");
 
-                    if (ftdiUart != null && !ftdiUart.isOpened())
-                        doOpenUart();
-                    else
-                        debugMsg("ftdiuart not init");
-                    if (ftdiUart.isOpened())
-                        doSendUartString();
-                    else
-                        debugMsg("ftdiuart not open ok");
+                    if( mUsbConnection != null && mUsbConnection.isOpened()) {
+                        String msg=inputText.getText().toString()+"\r\n";
+                        mUsbConnection.write(msg.getBytes());
+                    }else{
+                        debugMsg("reinit usb");
+                        if( mUsbConnection == null) doSetupUsb();
+                        mUsbConnection.open(115200);
+                    }
+
                 }
             });
         }
     }
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mUsbConnection.close();
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -70,130 +78,53 @@ public class MainActivity extends Activity {
 
         return super.onOptionsItemSelected(item);
     }
+
+
+
+
+
+
+
+
+
+
+
+
     void debugMsg(String msg){
         if(console!= null){
             console.append(msg+"\n");
         }
     }
 
-    void doReleaseUart()
+    void doSetupUsb()
     {
-        try {
-            if (ftdiUart.isOpened()) {
-                doStopListenUart();
-                ftdiUart.close();
-            }
-        }catch (IOException e) {
-            debugMsg("OnDetach Close uart error!!");
-            e.printStackTrace();
-        }
-        ftdiUart = null;
+        mUsbConnection = new UsbConnection(this.getApplicationContext(),mHandler);
     }
-    void doSetupUart()
-    {
-        ftdiUart = new UsbFTDIUart(this.getApplicationContext());
-    }
-    boolean doOpenUart()
-    {
-        boolean success = false;
-        try{
-            ftdiUart.open(115200);
-            debugMsg("open uart ok");
-            success = true;
-        }catch (IOException e){
-            success = false;
-            debugMsg( "OnAttach open uart error!!");
-            debugMsg(e.toString());
-            e.printStackTrace();
-        }
-        if( success )
-            doListenUart();
-        return success;
-    }
-
-    public  void doReadUart()
-    {
-        byte[] readData=new byte[4096];
-        try{
-            ftdiUart.read(readData);
-        }catch (IOException e){
-            debugMsg("Read uart error!!");
-            e.printStackTrace();
-        }
-        if( readData.length == 0)
-            return;
-        String msg = readData.toString();
-        Message mesg = new Message();
-        Bundle bun = new Bundle();
-        bun.putString("data",msg);
-        mesg.setData(bun);
-        mHandler.sendMessage(mesg);
-    }
-
-    Runnable uartReciveRunner = new Runnable() {
-        @Override
-        public void run() {
-            while (listenThreadStart){
-                doReadUart();
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            debugMsg("tcpreciveRunner exit");
-        }
-    };
-    Runnable uartSendRunner = new Runnable() {
-        @Override
-        public void run() {
-            String msg=inputText.getText().toString()+"\r\n";
-            if( !ftdiUart.isOpened())
-                return;
-            ftdiUart.write(msg.getBytes());
-            debugMsg("uartsendRunner exit");
-        }
-    };
-
-    private void doSendUartString()
-    {
-        new Thread(uartSendRunner).start();
-    }
-    boolean listenThreadStart = false;
-    private void doListenUart()
-    {
-        listenThreadStart = true;
-        new Thread(uartReciveRunner).start();
-    }
-    private void doStopListenUart()
-    {
-        listenThreadStart = false;
-    }
-
-
     private Handler mHandler = new Handler(){
+        byte[] readData;
+        int len;
         public void handleMessage(Message msg) {
-            if( console == null) {
+            if (console == null) {
                 return;
             }
-
-            console.append(msg.getData().getString("data"));
+            if (msg.what == mUsbConnection.MSG_DATA_AVAILABLE_ID) {
+                readData = msg.getData().getByteArray("data");
+                len = msg.getData().getInt("size");
+                String msgd="";
+                String str1="";
+                for( int i =0 ;i < len; i++) {
+                    msgd = msgd + Integer.toString(readData[i]) + ",";
+                    str1 = str1+ Character.toString((char)readData[i]);
+                }
+                console.append("readData =" + str1);
+            } else if (msg.what == mUsbConnection.MSG_DEBUG_ID){
+                console.append(msg.getData().getString("data"));
+            }else if( msg.what == mUsbConnection.MSG_CONNECT_BROKEN_ID){
+                console.append(msg.getData().getString("data"));
+            }
 
             super.handleMessage(msg);
         }
     };
-/*
-    @Override
-    public void onClick(View view) {
-        debugMsg("onclick");
 
-        if (ftdiUart != null && !ftdiUart.isOpened())
-            doOpenUart();
-        else
-            debugMsg("ftdiuart not init");
-        if (ftdiUart.isOpened())
-            doSendUartString();
-        else
-            debugMsg("ftdiuart not open ok");
-    }*/
 }

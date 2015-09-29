@@ -1,3 +1,4 @@
 include ':app'
 
 include ':dependencyLibs:usb-serial-for-android:UsbSerialLibrary'
+include ':dependencyLibs:Mavlink'
